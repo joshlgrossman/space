@@ -1,0 +1,118 @@
+# initialize variables
+define (1,counter=0) (2,color=true) (3,numLoops=4) (4,counter2=0) (5,maxEnemies=3)
+
+# random color seed
+$rndb[color,1,1]
+
+###############################################
+# CYCLE 1 ####################################
+#############################################
+# set beginning of loop
+$setv[ra,pc]
+
+# increment counter, begin loop
+$addi[counter,counter,1]
+
+# flip color value, add two turrets
+$_not[color,color]
+sync {
+	new enemy turret 100 -10 $bool[color]
+	new enemy turret 300 -10 $bool[color]
+}
+
+# add small L shaped walls
+new walls 20 60 0 1
+new walls 100 20 0 1
+
+# create a dumb-resize type 10xcounter swarm
+new enemy swarm 200 -40 $bool[color] 10 $getv[counter] 1
+
+# add electric fence
+new fence [50,-10] [350,-10] 0 1 0x000
+
+# wait until swarm is mostly killed
+wait
+branch_if $_gte[enemyCount,maxEnemies] -1
+
+new walls 30 1000 0 1
+
+# create some pattern enemies
+$seti[counter2,2]
+# save current instruction delay
+$pshv[delay]
+$seti[delay,100]
+## loop:
+	# save variables 6, 7, 8
+	$pshv[6]
+	$pshv[7]
+	$pshv[8]
+	$pshv[9]
+	
+	$indx[6]
+	$addi[counter2,counter2,-1]
+	# wait until enemyCounter < maxEnemies
+	wait
+	branch_if $__gt[enemyCount,0] -1
+	## inner loop:
+		$seti[7,7]
+		$seti[9,48]
+		$indx[8]
+		new enemy pattern $getv[9] -10 $_not[color,color] 0 20 -1
+		$addi[9,9,50]
+		$addi[7,7,-1]
+		goto_if $__gt[7,0] $getv[8]
+		
+	## end inner loop	
+	# if counter2 >= 0 repeat loop
+	goto_if $_gte[counter2,0] $getv[6]
+## endloop
+
+# restore variable 8, 6, delay
+$popv[9]
+$popv[8]
+$popv[7]
+$popv[6]
+$popv[delay]
+
+# wait until no enemies are left
+wait
+branch_if $__gt[enemyCount,0] -1
+
+# random item drop
+branch_if $rndb[3,1] 1
+new item $rndf[100,300] -10 $rndi[0,7]
+
+# if loop has been repeated "numLoops" times then go to cycle 2
+branch_if $_gte[counter,numLoops] 1
+# else return to top of loop
+ret
+
+###############################################
+# BOSS 1  ####################################
+#############################################
+# set beginning of loop
+$setv[ra,pc]
+
+# create boss
+new enemy boss 0
+
+# wait until boss is killed
+wait
+branch_if $__gt[enemyCount,0] -1
+
+###############################################
+# CYCLE 2 ####################################
+#############################################
+# set beginning of loop
+$setv[ra,pc]
+
+# create smart enemy
+new enemy smart $rndi[50,350] -10 $rndb[1,1] 3
+
+# only allow 2 enemies on screen at a time
+wait
+branch_if $__gt[enemyCount,maxEnemies] -1
+
+# return to top of loop
+ret
+
